@@ -1,5 +1,6 @@
 import app from './app';
 import { makeExecutableSchema } from "graphql-tools";
+import { importSchema } from "graphql-import";
 import { graphqlExpress, graphiqlExpress } from "apollo-server-express";
 var bodyParser = require('body-parser');
 import { createConnection } from 'typeorm';
@@ -13,33 +14,7 @@ import { Apple } from './entity/Apple';
 const port = 4354;
 export const pubsub = new PubSub();
 const FRUITBASKET_ADDED_TOPIC = 'fruitbasketAdded';
-
-const typeDefs = `
-  type fruitBasket {
-    id: Int
-    numFruits: Int
-    name: String
-    apples: [apple]
-  }
-
-  type apple {
-    id: Int
-    color: String
-    size: String
-  }
-
-  type Query {
-    allFruits: [fruitBasket]
-  }
-
-  type Mutation {
-    createFruitBasket(numFruits: Int, name: String): fruitBasket
-  }
-
-  type Subscription {
-    fruitBasketAdded: fruitBasket
-  }
-`;
+const typeDefs = importSchema("./src/schema.graphql");
 
 interface fruitBasket {
   id: number;
@@ -91,10 +66,17 @@ createConnection({
         fb.numFruits = numFruits;
         fb.name = name;
         await fb.save();
-        pubsub.publish(FRUITBASKET_ADDED_TOPIC, {fb});
+        console.log(fb);
+        pubsub.publish(FRUITBASKET_ADDED_TOPIC, {FRUITBASKET_ADDED_TOPIC: fb});
         return fb;
       }
     },
+    /* To subscribe from graphiql,
+    subscription {
+      fruitBasketAdded {
+        id
+      }
+    } */
     Subscription: {
       fruitBasketAdded: {
         subscribe: () => pubsub.asyncIterator(FRUITBASKET_ADDED_TOPIC),
@@ -110,7 +92,7 @@ createConnection({
   // GraphiQL, a visual editor for queries
   app.use("/graphiql", graphiqlExpress({ 
     endpointURL: "/graphql",
-    subscriptionsEndpoint: `ws://localhost:4000/subscriptions`
+    subscriptionsEndpoint: `ws://localhost:4354/subscriptions`
   }));
   const server = createServer(app);
   server.listen(port, () => {

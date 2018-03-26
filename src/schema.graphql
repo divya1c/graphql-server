@@ -1,0 +1,24 @@
+type fruitBasket {
+    id: Int
+    numFruits: Int
+    name: String
+    apples: [apple]
+}
+
+type apple {
+    id: Int
+    color: String
+    size: String
+}
+
+type Query {
+    allFruits: [fruitBasket]
+}
+
+type Mutation {
+    createFruitBasket(numFruits: Int, name: String): fruitBasket
+}
+
+type Subscription {
+    fruitBasketAdded: fruitBasket
+}
